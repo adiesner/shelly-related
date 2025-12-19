@@ -3,7 +3,9 @@ let influxDbEndpoint = "";
 // specify a custom name for your shelly (only used for influxdb)
 let shellyName = "";
 // set to true if you want to debug the script
-let debug = false;
+const debug = false;
+
+const IGNORE_POWER_BELOW = 250; // in milliwatts
 
 // Pushover settings for notification when washing is done
 let pushoverMessage = "Washing machine is done";
@@ -45,9 +47,10 @@ function notifyFinishedWashing() {
 }
 
 function statusHandler(event, user_data) {
+    // {"id":0,"aenergy":{"by_minute":[213.409,0.000,0.000],"minute_ts":1766139780,"total":185232.508},"ret_aenergy":{"by_minute":[0.000,0.000,0.000],"minute_ts":1766139780,"total":0.000}}"}
     if (typeof event.delta.aenergy !== "undefined") {
-        let isThreeMinOff = event.delta.aenergy.by_minute[0] == 0 && event.delta.aenergy.by_minute[1] == 0 && event.delta.aenergy.by_minute[2] == 0;
-        let isThreeMinOn = event.delta.aenergy.by_minute[0] > 0 && event.delta.aenergy.by_minute[1] > 0 && event.delta.aenergy.by_minute[2] > 0;
+        let isThreeMinOff = event.delta.aenergy.by_minute[0] <= IGNORE_POWER_BELOW && event.delta.aenergy.by_minute[1] <= IGNORE_POWER_BELOW && event.delta.aenergy.by_minute[2] <= IGNORE_POWER_BELOW;
+        let isThreeMinOn = event.delta.aenergy.by_minute[0] > IGNORE_POWER_BELOW && event.delta.aenergy.by_minute[1] > IGNORE_POWER_BELOW && event.delta.aenergy.by_minute[2] > IGNORE_POWER_BELOW;
         if (isCurrentlyActive && isThreeMinOff) {
             if (debug) print("Changed from active to inactive...");
             isCurrentlyActive = false
